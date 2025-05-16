@@ -1,195 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Date Range Picker Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/daterangepicker/3.1.0/daterangepicker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/daterangepicker/3.1.0/daterangepicker.min.js"></script>
+    <!-- DataTables for better table functionality -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 min-h-screen font-sans">
-  <div class="container mx-auto p-4 md:p-8">
-    <h1 class="text-4xl font-extrabold mb-6 text-indigo-700 flex items-center gap-2">
-      📊 <span>Hacker Kuldeep</span>
-    </h1>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>Sales Performance Dashboard</h1>
+            <div class="date-info">
+                <span id="current-date"></span>
+                <div class="last-updated">Last updated: <span id="last-updated"></span></div>
+            </div>
+        </header>
 
-    <!-- Filters -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-      <div class="bg-white shadow rounded p-3">
-        <label class="block text-sm font-medium text-gray-600 mb-1">Date From</label>
-        <input type="date" id="dateFrom" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-      </div>
-      <div class="bg-white shadow rounded p-3">
-        <label class="block text-sm font-medium text-gray-600 mb-1">Date To</label>
-        <input type="date" id="dateTo" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-      </div>
-      <div class="bg-white shadow rounded p-3">
-        <label class="block text-sm font-medium text-gray-600 mb-1">State</label>
-        <select id="stateFilter" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400">
-          <option value="">All</option>
-        </select>
-      </div>
-      <div class="bg-white shadow rounded p-3">
-        <label class="block text-sm font-medium text-gray-600 mb-1">Representative</label>
-        <select id="repFilter" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400">
-          <option value="">All</option>
-        </select>
-      </div>
-      <div class="bg-white shadow rounded p-3">
-        <label class="block text-sm font-medium text-gray-600 mb-1">District</label>
-        <select id="districtFilter" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400">
-          <option value="">All</option>
-        </select>
-      </div>
+        <section class="filters">
+            <h2>Filters</h2>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="state-filter">State</label>
+                    <select id="state-filter">
+                        <option value="">All States</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="district-filter">District</label>
+                    <select id="district-filter">
+                        <option value="">All Districts</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="salesperson-filter">Salesperson</label>
+                    <select id="salesperson-filter">
+                        <option value="">All Salespersons</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="date-range">Date Range</label>
+                    <input type="text" id="date-range" class="date-picker">
+                </div>
+                <div class="filter-group">
+                    <button id="apply-filters" class="btn primary">Apply Filters</button>
+                    <button id="reset-filters" class="btn secondary">Reset</button>
+                </div>
+            </div>
+        </section>
+
+        <div id="loading" class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading data...</p>
+        </div>
+        
+        <div id="dashboard-content" class="hidden">
+            <section class="summary-stats">
+                <div class="stat-card">
+                    <h3>Total Sales</h3>
+                    <div class="stat" id="total-sales">₹0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Orders</h3>
+                    <div class="stat" id="total-orders">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Order Value</h3>
+                    <div class="stat" id="avg-order-value">₹0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Top Salesperson</h3>
+                    <div class="stat" id="top-salesperson">-</div>
+                </div>
+            </section>
+
+            <div class="charts-container">
+                <section class="chart-section">
+                    <div class="chart-card">
+                        <h3>Sales Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="sales-trend-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Sales by State</h3>
+                        <div class="chart-container">
+                            <canvas id="sales-by-state-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="chart-section">
+                    <div class="chart-card">
+                        <h3>Sales by Salesperson</h3>
+                        <div class="chart-container">
+                            <canvas id="sales-by-salesperson-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Sales Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="sales-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="data-table-section">
+                <h2>Detailed Sales Data</h2>
+                <div class="table-container">
+                    <table id="sales-table" class="display">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>State</th>
+                                <th>District</th>
+                                <th>Salesperson</th>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>© 2025 Sales Dashboard</p>
+        </footer>
     </div>
 
-    <!-- Total Sales -->
-    <div class="bg-indigo-600 text-white p-6 rounded shadow mb-6">
-      <h2 class="text-xl font-semibold">Total Sales</h2>
-      <p class="text-3xl font-bold mt-2">₹ <span id="totalSales">0</span></p>
-    </div>
-
-    <!-- Chart -->
-    <div class="bg-white rounded shadow p-4">
-      <canvas id="salesChart" height="100"></canvas>
-    </div>
-  </div>
-
-  <script>
-    const salesData = [
-      { state: 'Uttar Pradesh', district: 'Lucknow', rep: 'Rajesh Verma', party: 'BJP', date: '2025-04-10', sale: 17810 },
-      { state: 'Maharashtra', district: 'Pune', rep: 'Supriya Sule', party: 'NCP', date: '2025-04-10', sale: 15637 },
-      { state: 'Tamil Nadu', district: 'Chennai', rep: 'Thamizhachi Thangapandian', party: 'DMK', date: '2025-04-13', sale: 21003 },
-      { state: 'West Bengal', district: 'Kolkata', rep: 'Sudip Bandyopadhyay', party: 'AITC', date: '2025-05-01', sale: 19868 },
-      { state: 'Rajasthan', district: 'Jaipur', rep: 'Ramcharan Bohra', party: 'BJP', date: '2025-01-08', sale: 20081 },
-      { state: 'Kerala', district: 'Ernakulam', rep: 'Hibi Eden', party: 'INC', date: '2024-12-20', sale: 21809 },
-      { state: 'Bihar', district: 'Patna', rep: 'Ravi Shankar Prasad', party: 'BJP', date: '2024-12-30', sale: 22119 },
-      { state: 'Gujarat', district: 'Ahmedabad', rep: 'Hasmukh Patel', party: 'BJP', date: '2025-04-03', sale: 81150 },
-      { state: 'Uttar Pradesh', district: 'Lucknow', rep: 'Rajesh Verma', party: 'BJP', date: '2025-04-03', sale: 432 },
-      { state: 'Maharashtra', district: 'Pune', rep: 'Supriya Sule', party: 'NCP', date: '2025-04-03', sale: 324235 },
-      { state: 'Tamil Nadu', district: 'Chennai', rep: 'Thamizhachi Thangapandian', party: 'DMK', date: '2024-12-24', sale: 325353 },
-      { state: 'West Bengal', district: 'Kolkata', rep: 'Sudip Bandyopadhyay', party: 'AITC', date: '2025-04-13', sale: 325523 },
-      { state: 'Rajasthan', district: 'Jaipur', rep: 'Ramcharan Bohra', party: 'BJP', date: '2024-11-04', sale: 6546 },
-      { state: 'Kerala', district: 'Ernakulam', rep: 'Hibi Eden', party: 'INC', date: '2024-12-10', sale: 436 },
-      { state: 'Bihar', district: 'Patna', rep: 'Ravi Shankar Prasad', party: 'BJP', date: '2024-09-15', sale: 65765 },
-      { state: 'Gujarat', district: 'Ahmedabad', rep: 'Hasmukh Patel', party: 'BJP', date: '2024-08-21', sale: 45645 },
-    ];
-
-    const stateFilter = document.getElementById('stateFilter');
-    const repFilter = document.getElementById('repFilter');
-    const districtFilter = document.getElementById('districtFilter');
-
-    const unique = (arr, key) => [...new Set(arr.map(item => item[key]))];
-
-    function populateFilters() {
-      unique(salesData, 'state').forEach(state => {
-        const opt = new Option(state, state);
-        stateFilter.add(opt);
-      });
-      unique(salesData, 'rep').forEach(rep => {
-        const opt = new Option(rep, rep);
-        repFilter.add(opt);
-      });
-      unique(salesData, 'district').forEach(dist => {
-        const opt = new Option(dist, dist);
-        districtFilter.add(opt);
-      });
-    }
-
-    function filterData() {
-      const from = document.getElementById('dateFrom').value;
-      const to = document.getElementById('dateTo').value;
-      const state = stateFilter.value;
-      const rep = repFilter.value;
-      const district = districtFilter.value;
-
-      return salesData.filter(row => {
-        const inDate = (!from || row.date >= from) && (!to || row.date <= to);
-        const inState = !state || row.state === state;
-        const inRep = !rep || row.rep === rep;
-        const inDistrict = !district || row.district === district;
-        return inDate && inState && inRep && inDistrict;
-      });
-    }
-
-    function updateDashboard() {
-      const filtered = filterData();
-      const total = filtered.reduce((sum, row) => sum + row.sale, 0);
-      document.getElementById('totalSales').innerText = total.toLocaleString();
-      updateChart(filtered);
-    }
-
-    let chart;
-    function updateChart(data) {
-      const grouped = {};
-      data.forEach(row => {
-        grouped[row.date] = (grouped[row.date] || 0) + row.sale;
-      });
-
-      const labels = Object.keys(grouped).sort();
-      const sales = labels.map(date => grouped[date]);
-
-      if (chart) chart.destroy();
-      const ctx = document.getElementById('salesChart').getContext('2d');
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Daily Sales',
-            data: sales,
-            backgroundColor: 'rgba(99, 102, 241, 0.2)',
-            borderColor: '#6366f1',
-            fill: true,
-            tension: 0.4,
-            borderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              labels: {
-                color: '#333',
-                font: {
-                  size: 14,
-                  weight: 'bold'
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: '#555' },
-              title: {
-                display: true,
-                text: 'Date',
-                color: '#444',
-                font: { weight: 'bold' }
-              }
-            },
-            y: {
-              ticks: { color: '#555' },
-              title: {
-                display: true,
-                text: 'Sales ₹',
-                color: '#444',
-                font: { weight: 'bold' }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    document.querySelectorAll('input, select').forEach(el => {
-      el.addEventListener('change', updateDashboard);
-    });
-
-    populateFilters();
-    updateDashboard();
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
