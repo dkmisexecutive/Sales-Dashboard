@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sales Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">📊 Sales Dashboard</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div>
+        <label class="block">Date From</label>
+        <input type="date" id="dateFrom" class="w-full p-2 border rounded" />
+      </div>
+      <div>
+        <label class="block">Date To</label>
+        <input type="date" id="dateTo" class="w-full p-2 border rounded" />
+      </div>
+      <div>
+        <label class="block">State</label>
+        <select id="stateFilter" class="w-full p-2 border rounded">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div>
+        <label class="block">Representative</label>
+        <select id="repFilter" class="w-full p-2 border rounded">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div>
+        <label class="block">District</label>
+        <select id="districtFilter" class="w-full p-2 border rounded">
+          <option value="">All</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow mb-6">
+      <h2 class="text-xl font-semibold mb-4">Total Sales: ₹<span id="totalSales">0</span></h2>
+    </div>
+
+    <canvas id="salesChart" height="100"></canvas>
+  </div>
+
+  <script>
+    const salesData = [
+      { state: 'Uttar Pradesh', district: 'Lucknow', rep: 'Rajesh Verma', party: 'BJP', date: '2025-04-10', sale: 17810 },
+      { state: 'Maharashtra', district: 'Pune', rep: 'Supriya Sule', party: 'NCP', date: '2025-04-10', sale: 15637 },
+      { state: 'Tamil Nadu', district: 'Chennai', rep: 'Thamizhachi Thangapandian', party: 'DMK', date: '2025-04-13', sale: 21003 },
+      { state: 'West Bengal', district: 'Kolkata', rep: 'Sudip Bandyopadhyay', party: 'AITC', date: '2025-05-01', sale: 19868 },
+      { state: 'Rajasthan', district: 'Jaipur', rep: 'Ramcharan Bohra', party: 'BJP', date: '2025-01-08', sale: 20081 },
+      { state: 'Kerala', district: 'Ernakulam', rep: 'Hibi Eden', party: 'INC', date: '2024-12-20', sale: 21809 },
+      { state: 'Bihar', district: 'Patna', rep: 'Ravi Shankar Prasad', party: 'BJP', date: '2024-12-30', sale: 22119 },
+      { state: 'Gujarat', district: 'Ahmedabad', rep: 'Hasmukh Patel', party: 'BJP', date: '2025-04-03', sale: 81150 },
+      { state: 'Uttar Pradesh', district: 'Lucknow', rep: 'Rajesh Verma', party: 'BJP', date: '2025-04-03', sale: 432 },
+      { state: 'Maharashtra', district: 'Pune', rep: 'Supriya Sule', party: 'NCP', date: '2025-04-03', sale: 324235 },
+      { state: 'Tamil Nadu', district: 'Chennai', rep: 'Thamizhachi Thangapandian', party: 'DMK', date: '2024-12-24', sale: 325353 },
+      { state: 'West Bengal', district: 'Kolkata', rep: 'Sudip Bandyopadhyay', party: 'AITC', date: '2025-04-13', sale: 325523 },
+      { state: 'Rajasthan', district: 'Jaipur', rep: 'Ramcharan Bohra', party: 'BJP', date: '2024-11-04', sale: 6546 },
+      { state: 'Kerala', district: 'Ernakulam', rep: 'Hibi Eden', party: 'INC', date: '2024-12-10', sale: 436 },
+      { state: 'Bihar', district: 'Patna', rep: 'Ravi Shankar Prasad', party: 'BJP', date: '2024-09-15', sale: 65765 },
+      { state: 'Gujarat', district: 'Ahmedabad', rep: 'Hasmukh Patel', party: 'BJP', date: '2024-08-21', sale: 45645 },
+    ];
+
+    const stateFilter = document.getElementById('stateFilter');
+    const repFilter = document.getElementById('repFilter');
+    const districtFilter = document.getElementById('districtFilter');
+
+    const unique = (arr, key) => [...new Set(arr.map(item => item[key]))];
+
+    function populateFilters() {
+      unique(salesData, 'state').forEach(state => {
+        const opt = new Option(state, state);
+        stateFilter.add(opt);
+      });
+      unique(salesData, 'rep').forEach(rep => {
+        const opt = new Option(rep, rep);
+        repFilter.add(opt);
+      });
+      unique(salesData, 'district').forEach(dist => {
+        const opt = new Option(dist, dist);
+        districtFilter.add(opt);
+      });
+    }
+
+    function filterData() {
+      const from = document.getElementById('dateFrom').value;
+      const to = document.getElementById('dateTo').value;
+      const state = stateFilter.value;
+      const rep = repFilter.value;
+      const district = districtFilter.value;
+
+      return salesData.filter(row => {
+        const inDate = (!from || row.date >= from) && (!to || row.date <= to);
+        const inState = !state || row.state === state;
+        const inRep = !rep || row.rep === rep;
+        const inDistrict = !district || row.district === district;
+        return inDate && inState && inRep && inDistrict;
+      });
+    }
+
+    function updateDashboard() {
+      const filtered = filterData();
+      const total = filtered.reduce((sum, row) => sum + row.sale, 0);
+      document.getElementById('totalSales').innerText = total.toLocaleString();
+      updateChart(filtered);
+    }
+
+    let chart;
+    function updateChart(data) {
+      const labels = data.map(d => d.date);
+      const sales = data.map(d => d.sale);
+      if (chart) chart.destroy();
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Sales',
+            data: sales,
+            backgroundColor: '#3b82f6'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('change', updateDashboard);
+    });
+
+    populateFilters();
+    updateDashboard();
+  </script>
+</body>
+</html>
