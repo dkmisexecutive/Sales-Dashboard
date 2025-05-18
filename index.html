@@ -5,27 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sales Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN added -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; }
-    .filters label { margin-right: 15px; }
-    .suggestions {
-      border: 1px solid #ccc;
-      max-height: 100px;
-      overflow-y: auto;
-      position: absolute;
-      background: white;
-      z-index: 100;
-      width: 200px;
-      display: none;
-    }
-    .suggestions div {
-      padding: 5px;
-      cursor: pointer;
-    }
-    .suggestions div:hover {
-      background-color: #eee;
-    }
+    .filters label { margin-right: 15px; display: block; margin-bottom: 10px; }
+    select { min-width: 200px; padding: 5px; }
     table {
       border-collapse: collapse;
       width: 100%;
@@ -49,8 +35,10 @@
       font-size: 18px;
     }
     .filters {
-      position: relative;
       margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
     #chartContainer {
       margin-top: 30px;
@@ -69,23 +57,19 @@
   <div class="filters">
     <label>
       State:
-      <input type="text" id="stateFilter" placeholder="Type to search state..." autocomplete="off" />
-      <div class="suggestions" id="stateSuggestions"></div>
+      <select id="stateFilter"><option value="">All</option></select>
     </label>
     <label>
       Representative:
-      <input type="text" id="repFilter" placeholder="Type to search rep..." autocomplete="off" />
-      <div class="suggestions" id="repSuggestions"></div>
+      <select id="repFilter"><option value="">All</option></select>
     </label>
     <label>
       City:
-      <input type="text" id="cityFilter" placeholder="Type to search city..." autocomplete="off" />
-      <div class="suggestions" id="citySuggestions"></div>
+      <select id="cityFilter"><option value="">All</option></select>
     </label>
     <label>
       Distributor:
-      <input type="text" id="distributorFilter" placeholder="Type to search distributor..." autocomplete="off" />
-      <div class="suggestions" id="distributorSuggestions"></div>
+      <select id="distributorFilter"><option value="">All</option></select>
     </label>
     <label>
       Date From:
@@ -119,5 +103,15 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Initialize Choices on each filter select
+    ['stateFilter', 'repFilter', 'cityFilter', 'distributorFilter'].forEach(id => {
+      new Choices('#' + id, {
+        searchEnabled: true,
+        itemSelectText: '',
+        shouldSort: false,
+      });
+    });
+  </script>
 </body>
 </html>
