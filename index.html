@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sales Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js CDN added -->
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; }
     .filters label { margin-right: 15px; }
     .suggestions {
       border: 1px solid #ccc;
@@ -29,6 +30,7 @@
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
+      background-color: white;
     }
     table, th, td {
       border: 1px solid #aaa;
@@ -37,21 +39,32 @@
       padding: 8px;
       text-align: left;
     }
-    #totalSales {
+    .card {
+      background-color: #ffffff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
       font-weight: bold;
       font-size: 18px;
-      margin-bottom: 15px;
     }
     .filters {
       position: relative;
       margin-bottom: 10px;
+    }
+    #chartContainer {
+      margin-top: 30px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
   <h1>Sales Dashboard</h1>
 
-  <div id="totalSales">Total Sales: ₹0</div>
+  <div class="card" id="totalSales">Total Sales: ₹0</div>
 
   <div class="filters">
     <label>
@@ -99,6 +112,11 @@
     </thead>
     <tbody></tbody>
   </table>
+
+  <!-- Chart container -->
+  <div id="chartContainer">
+    <canvas id="salesChart" height="100"></canvas>
+  </div>
 
   <script src="script.js"></script>
 </body>
