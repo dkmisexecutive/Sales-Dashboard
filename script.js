@@ -1,6 +1,7 @@
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5XxdtzE8EspXl6l5EwqPg6kC0E36q6F9P7vKuT7RwSpa3981Mc6mt5xUOCRtXcLSrOWPX6oQb4geg/pub?gid=0&single=true&output=csv';
 
 let rawData = [];
+let salesChart = null; // Chart instance
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
@@ -20,6 +21,7 @@ function fetchData() {
       initAutocompleteFilters();
       renderTable();
       updateTotalSales();
+      updateChart(); // Draw initial chart
     })
     .catch(err => {
       console.error('Error fetching CSV:', err);
@@ -78,6 +80,8 @@ function renderTable() {
     `;
     tableBody.appendChild(tr);
   });
+
+  updateChart(); // update chart when table updates
 }
 
 function updateTotalSales() {
@@ -172,4 +176,46 @@ function showSuggestions(filterId) {
 function hideSuggestions(filterId) {
   const suggestionsDiv = document.getElementById(filterId + "Suggestions");
   suggestionsDiv.style.display = "none";
+}
+
+// 🔥 Chart Drawing Function
+function updateChart() {
+  const filtered = applyFilters(rawData);
+
+  const salesByCity = {};
+  filtered.forEach(row => {
+    const city = row.City || "Unknown";
+    salesByCity[city] = (salesByCity[city] || 0) + row["Bill Amount"];
+  });
+
+  const labels = Object.keys(salesByCity);
+  const values = Object.values(salesByCity);
+
+  const ctx = document.getElementById('salesChart').getContext('2d');
+
+  if (salesChart) {
+    salesChart.destroy(); // destroy previous chart
+  }
+
+  salesChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Sales by City',
+        data: values,
+        backgroundColor: '#4285F4'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
 }
