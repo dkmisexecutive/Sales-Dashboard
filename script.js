@@ -99,11 +99,15 @@ function formatDate(dateObj) {
 function setupEventListeners() {
   ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
     const input = document.getElementById(id);
-    input.addEventListener("input", () => showSuggestions(id));
-    input.addEventListener("blur", () => setTimeout(() => hideSuggestions(id), 200));
-    input.addEventListener("change", () => {
+
+    input.addEventListener("input", () => {
+      showSuggestions(id);
       renderTable();
       updateTotalSales();
+    });
+
+    input.addEventListener("blur", () => {
+      setTimeout(() => hideSuggestions(id), 200);
     });
   });
 
@@ -113,15 +117,6 @@ function setupEventListeners() {
       updateTotalSales();
     });
   });
-}
-
-function initAutocompleteFilters() {
-  const states = [...new Set(rawData.map(row => row.State).filter(Boolean))].sort();
-  const reps = [...new Set(rawData.map(row => row.Rep).filter(Boolean))].sort();
-  const cities = [...new Set(rawData.map(row => row.City).filter(Boolean))].sort();
-  const distributors = [...new Set(rawData.map(row => row.Distributor).filter(Boolean))].sort();
-
-  window.filterData = { states, reps, cities, distributors };
 }
 
 function showSuggestions(filterId) {
@@ -137,14 +132,15 @@ function showSuggestions(filterId) {
     case "distributorFilter": list = window.filterData.distributors; break;
   }
 
-  const filteredList = list.filter(item => item.toLowerCase().includes(query));
+  const filteredList = list.filter(item => item.toLowerCase().startsWith(query));
+
+  suggestionsDiv.innerHTML = "";
 
   if (filteredList.length === 0) {
     suggestionsDiv.style.display = "none";
     return;
   }
 
-  suggestionsDiv.innerHTML = "";
   filteredList.forEach(item => {
     const div = document.createElement("div");
     div.textContent = item;
@@ -156,6 +152,7 @@ function showSuggestions(filterId) {
     });
     suggestionsDiv.appendChild(div);
   });
+
   suggestionsDiv.style.display = "block";
 }
 
