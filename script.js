@@ -1,7 +1,7 @@
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5XxdtzE8EspXl6l5EwqPg6kC0E36q6F9P7vKuT7RwSpa3981Mc6mt5xUOCRtXcLSrOWPX6oQb4geg/pub?gid=0&single=true&output=csv';
 
 let rawData = [];
-let salesChart = null; // Chart instance
+let salesChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
@@ -21,17 +21,15 @@ function fetchData() {
       initAutocompleteFilters();
       renderTable();
       updateTotalSales();
-      updateChart(); // Draw initial chart
+      updateChart();
     })
-    .catch(err => {
-      console.error('Error fetching CSV:', err);
-    });
+    .catch(err => console.error('Error fetching CSV:', err));
 }
 
 function parseDate(dateStr) {
   if (!dateStr || !dateStr.includes("-")) return null;
   const [dd, mm, yyyy] = dateStr.split("-");
-  return new Date(${yyyy}-${mm}-${dd});
+  return new Date(`${yyyy}-${mm}-${dd}`);
 }
 
 function getFilters() {
@@ -69,7 +67,7 @@ function renderTable() {
 
   filtered.forEach(row => {
     const tr = document.createElement("tr");
-    tr.innerHTML = 
+    tr.innerHTML = `
       <td>${row["Bill No"]}</td>
       <td>${formatDate(row["Bill Date"])}</td>
       <td>₹${row["Bill Amount"].toFixed(2)}</td>
@@ -77,17 +75,17 @@ function renderTable() {
       <td>${row["City"]}</td>
       <td>${row["State"]}</td>
       <td>${row["Rep"]}</td>
-    ;
+    `;
     tableBody.appendChild(tr);
   });
 
-  updateChart(); // update chart when table updates
+  updateChart();
 }
 
 function updateTotalSales() {
   const filtered = applyFilters(rawData);
   const total = filtered.reduce((sum, row) => sum + (row["Bill Amount"] || 0), 0);
-  document.getElementById("totalSales").textContent = Total Sales: ₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })};
+  document.getElementById("totalSales").textContent = `Total Sales: ₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 }
 
 function formatDate(dateObj) {
@@ -95,18 +93,14 @@ function formatDate(dateObj) {
   const dd = String(dateObj.getDate()).padStart(2, "0");
   const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
   const yyyy = dateObj.getFullYear();
-  return ${dd}-${mm}-${yyyy};
+  return `${dd}-${mm}-${yyyy}`;
 }
 
 function setupEventListeners() {
   ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
     const input = document.getElementById(id);
-    input.addEventListener("input", () => {
-      showSuggestions(id);
-    });
-    input.addEventListener("blur", () => {
-      setTimeout(() => hideSuggestions(id), 200);
-    });
+    input.addEventListener("input", () => showSuggestions(id));
+    input.addEventListener("blur", () => setTimeout(() => hideSuggestions(id), 200));
     input.addEventListener("change", () => {
       renderTable();
       updateTotalSales();
@@ -137,18 +131,10 @@ function showSuggestions(filterId) {
   let list = [];
 
   switch (filterId) {
-    case "stateFilter":
-      list = window.filterData.states;
-      break;
-    case "repFilter":
-      list = window.filterData.reps;
-      break;
-    case "cityFilter":
-      list = window.filterData.cities;
-      break;
-    case "distributorFilter":
-      list = window.filterData.distributors;
-      break;
+    case "stateFilter": list = window.filterData.states; break;
+    case "repFilter": list = window.filterData.reps; break;
+    case "cityFilter": list = window.filterData.cities; break;
+    case "distributorFilter": list = window.filterData.distributors; break;
   }
 
   const filteredList = list.filter(item => item.toLowerCase().includes(query));
@@ -178,11 +164,10 @@ function hideSuggestions(filterId) {
   suggestionsDiv.style.display = "none";
 }
 
-// 🔥 Chart Drawing Function
 function updateChart() {
   const filtered = applyFilters(rawData);
-
   const salesByCity = {};
+
   filtered.forEach(row => {
     const city = row.City || "Unknown";
     salesByCity[city] = (salesByCity[city] || 0) + row["Bill Amount"];
@@ -192,15 +177,12 @@ function updateChart() {
   const values = Object.values(salesByCity);
 
   const ctx = document.getElementById('salesChart').getContext('2d');
-
-  if (salesChart) {
-    salesChart.destroy(); // destroy previous chart
-  }
+  if (salesChart) salesChart.destroy();
 
   salesChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels,
+      labels,
       datasets: [{
         label: 'Sales by City',
         data: values,
