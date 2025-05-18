@@ -7,116 +7,177 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; }
-    .filters label { margin-right: 15px; }
-    .suggestions {
-      border: 1px solid #ccc;
-      max-height: 100px;
-      overflow-y: auto;
-      position: absolute;
-      background: white;
-      z-index: 100;
-      width: 200px;
-      display: none;
-    }
-    .suggestions div {
-      padding: 5px;
-      cursor: pointer;
-    }
-    .suggestions div:hover {
-      background-color: #eee;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-      background-color: white;
-    }
-    table, th, td {
-      border: 1px solid #aaa;
-    }
-    th, td {
-      padding: 8px;
-      text-align: left;
-    }
-    .card {
-      background-color: #ffffff;
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-      font-weight: bold;
-      font-size: 18px;
-    }
-    .filters {
-      position: relative;
-      margin-bottom: 10px;
-    }
-    #chartContainer {
-      margin-top: 30px;
-      background: #fff;
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      margin: 0;
       padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filters label {
+      position: relative;
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 60px;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .suggestions div {
+      padding: 6px 10px;
+    }
+
+    .suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    #totalSales {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #2e7d32;
+      background-color: #e8f5e9;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .chart-container {
+      margin-top: 40px;
+      background: white;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    @media (max-width: 768px) {
+      .filters {
+        flex-direction: column;
+      }
+
+      .filters label {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Sales Dashboard</h1>
+  <div class="container">
+    <h1>Sales Dashboard</h1>
 
-  <div class="card" id="totalSales">Total Sales: ₹0</div>
+    <div id="totalSales">Total Sales: ₹0</div>
 
-  <div class="filters">
-    <label>
-      State:
-      <input type="text" id="stateFilter" placeholder="Type to search state..." autocomplete="off" />
-      <div class="suggestions" id="stateSuggestions"></div>
-    </label>
-    <label>
-      Representative:
-      <input type="text" id="repFilter" placeholder="Type to search rep..." autocomplete="off" />
-      <div class="suggestions" id="repSuggestions"></div>
-    </label>
-    <label>
-      City:
-      <input type="text" id="cityFilter" placeholder="Type to search city..." autocomplete="off" />
-      <div class="suggestions" id="citySuggestions"></div>
-    </label>
-    <label>
-      Distributor:
-      <input type="text" id="distributorFilter" placeholder="Type to search distributor..." autocomplete="off" />
-      <div class="suggestions" id="distributorSuggestions"></div>
-    </label>
-    <label>
-      Date From:
-      <input type="date" id="fromDate" />
-    </label>
-    <label>
-      To:
-      <input type="date" id="toDate" />
-    </label>
+    <div class="filters">
+      <label>
+        State:
+        <input type="text" id="stateFilter" placeholder="Type to search state..." autocomplete="off" />
+        <div class="suggestions" id="stateFilterSuggestions"></div>
+      </label>
+      <label>
+        Representative:
+        <input type="text" id="repFilter" placeholder="Type to search rep..." autocomplete="off" />
+        <div class="suggestions" id="repFilterSuggestions"></div>
+      </label>
+      <label>
+        City:
+        <input type="text" id="cityFilter" placeholder="Type to search city..." autocomplete="off" />
+        <div class="suggestions" id="cityFilterSuggestions"></div>
+      </label>
+      <label>
+        Distributor:
+        <input type="text" id="distributorFilter" placeholder="Type to search distributor..." autocomplete="off" />
+        <div class="suggestions" id="distributorFilterSuggestions"></div>
+      </label>
+      <label>
+        Date From:
+        <input type="date" id="fromDate" />
+      </label>
+      <label>
+        To:
+        <input type="date" id="toDate" />
+      </label>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Bill No</th>
+          <th>Bill Date</th>
+          <th>Bill Amount</th>
+          <th>Distributor</th>
+          <th>City</th>
+          <th>State</th>
+          <th>Rep</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="chart-container">
+      <canvas id="salesChart" height="100"></canvas>
+    </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Bill No</th>
-        <th>Bill Date</th>
-        <th>Bill Amount</th>
-        <th>Distributor</th>
-        <th>City</th>
-        <th>State</th>
-        <th>Rep</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div id="chartContainer">
-    <canvas id="salesChart" height="100"></canvas>
-  </div>
-
-  <!-- Linked JavaScript File -->
+  <!-- Linked JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
