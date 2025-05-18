@@ -1,148 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- Chart.js for data visualization -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Date Range Picker Dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/daterangepicker/3.1.0/daterangepicker.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/daterangepicker/3.1.0/daterangepicker.min.js"></script>
-    <!-- DataTables for better table functionality -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/css/jquery.dataTables.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables/1.10.21/js/jquery.dataTables.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .filters label { margin-right: 15px; }
+    .suggestions {
+      border: 1px solid #ccc;
+      max-height: 100px;
+      overflow-y: auto;
+      position: absolute;
+      background: white;
+      z-index: 100;
+      width: 200px;
+      display: none;
+    }
+    .suggestions div {
+      padding: 5px;
+      cursor: pointer;
+    }
+    .suggestions div:hover {
+      background-color: #eee;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    #totalSales {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    .filters {
+      position: relative;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="dashboard">
-        <header>
-            <h1>Sales Performance Dashboard</h1>
-            <div class="date-info">
-                <span id="current-date"></span>
-                <div class="last-updated">Last updated: <span id="last-updated"></span></div>
-            </div>
-        </header>
+  <h1>Sales Dashboard</h1>
 
-        <section class="filters">
-            <h2>Filters</h2>
-            <div class="filter-grid">
-                <div class="filter-group">
-                    <label for="state-filter">State</label>
-                    <select id="state-filter">
-                        <option value="">All States</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="district-filter">District</label>
-                    <select id="district-filter">
-                        <option value="">All Districts</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="salesperson-filter">Salesperson</label>
-                    <select id="salesperson-filter">
-                        <option value="">All Salespersons</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="date-range">Date Range</label>
-                    <input type="text" id="date-range" class="date-picker">
-                </div>
-                <div class="filter-group">
-                    <button id="apply-filters" class="btn primary">Apply Filters</button>
-                    <button id="reset-filters" class="btn secondary">Reset</button>
-                </div>
-            </div>
-        </section>
+  <div id="totalSales">Total Sales: ₹0</div>
 
-        <div id="loading" class="loading-container">
-            <div class="loading-spinner"></div>
-            <p>Loading data...</p>
-        </div>
-        
-        <div id="dashboard-content" class="hidden">
-            <section class="summary-stats">
-                <div class="stat-card">
-                    <h3>Total Sales</h3>
-                    <div class="stat" id="total-sales">₹0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Total Orders</h3>
-                    <div class="stat" id="total-orders">0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Average Order Value</h3>
-                    <div class="stat" id="avg-order-value">₹0</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Top Salesperson</h3>
-                    <div class="stat" id="top-salesperson">-</div>
-                </div>
-            </section>
+  <div class="filters">
+    <label>
+      State:
+      <input type="text" id="stateFilter" placeholder="Type to search state..." autocomplete="off" />
+      <div class="suggestions" id="stateSuggestions"></div>
+    </label>
+    <label>
+      Representative:
+      <input type="text" id="repFilter" placeholder="Type to search rep..." autocomplete="off" />
+      <div class="suggestions" id="repSuggestions"></div>
+    </label>
+    <label>
+      City:
+      <input type="text" id="cityFilter" placeholder="Type to search city..." autocomplete="off" />
+      <div class="suggestions" id="citySuggestions"></div>
+    </label>
+    <label>
+      Distributor:
+      <input type="text" id="distributorFilter" placeholder="Type to search distributor..." autocomplete="off" />
+      <div class="suggestions" id="distributorSuggestions"></div>
+    </label>
+    <label>
+      Date From:
+      <input type="date" id="fromDate" />
+    </label>
+    <label>
+      To:
+      <input type="date" id="toDate" />
+    </label>
+  </div>
 
-            <div class="charts-container">
-                <section class="chart-section">
-                    <div class="chart-card">
-                        <h3>Sales Trend</h3>
-                        <div class="chart-container">
-                            <canvas id="sales-trend-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Sales by State</h3>
-                        <div class="chart-container">
-                            <canvas id="sales-by-state-chart"></canvas>
-                        </div>
-                    </div>
-                </section>
+  <!-- Table to show data -->
+  <table>
+    <thead>
+      <tr>
+        <th>Bill No</th>
+        <th>Bill Date</th>
+        <th>Bill Amount</th>
+        <th>Distributor</th>
+        <th>City</th>
+        <th>State</th>
+        <th>Rep</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-                <section class="chart-section">
-                    <div class="chart-card">
-                        <h3>Sales by Salesperson</h3>
-                        <div class="chart-container">
-                            <canvas id="sales-by-salesperson-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="chart-card">
-                        <h3>Sales Distribution</h3>
-                        <div class="chart-container">
-                            <canvas id="sales-distribution-chart"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <section class="data-table-section">
-                <h2>Detailed Sales Data</h2>
-                <div class="table-container">
-                    <table id="sales-table" class="display">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>State</th>
-                                <th>District</th>
-                                <th>Salesperson</th>
-                                <th>Product</th>
-                                <th>Quantity</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body">
-                            <!-- Data will be inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-
-        <footer>
-            <p>© 2025 Sales Dashboard</p>
-        </footer>
-    </div>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
