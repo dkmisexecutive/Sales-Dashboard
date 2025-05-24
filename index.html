@@ -1,140 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Sales Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
-    }
-
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .filters label {
-      position: relative;
-      width: 200px;
-      display: flex;
-      flex-direction: column;
-      font-size: 14px;
-    }
-
-    .suggestions {
-      position: absolute;
-      top: 60px;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #ccc;
-      max-height: 150px;
-      overflow-y: auto;
-      z-index: 10;
-      display: none;
-      cursor: pointer;
-      border-radius: 4px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .suggestions div {
-      padding: 6px 10px;
-    }
-
-    .suggestions div:hover {
-      background-color: #f0f0f0;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
-    }
-
-    th {
-      background-color: #f2f2f2;
-      font-weight: 600;
-    }
-
-    tr:hover {
-      background-color: #f9f9f9;
-    }
-
-    #totalSales {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 20px;
-      color: #2e7d32;
-      background-color: #e8f5e9;
-      padding: 12px 20px;
-      border-radius: 6px;
-      display: inline-block;
-    }
-
-    .chart-container {
-      margin-top: 40px;
-      background: white;
-      padding: 20px;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-
-    @media (max-width: 768px) {
-      .filters {
-        flex-direction: column;
-      }
-
-      .filters label {
-        width: 100%;
-      }
-    }
-  </style>
 </head>
 <body>
   <div class="container">
     <h1>Sales Dashboard</h1>
+    
     <div class="filters">
-      <label>State <input type="text" id="stateFilter" placeholder="Type to search..."><div class="suggestions" id="stateFilterSuggestions"></div></label>
-      <label>Rep <input type="text" id="repFilter" placeholder="Type to search..."><div class="suggestions" id="repFilterSuggestions"></div></label>
-      <label>City <input type="text" id="cityFilter" placeholder="Type to search..."><div class="suggestions" id="cityFilterSuggestions"></div></label>
-      <label>Distributor <input type="text" id="distributorFilter" placeholder="Type to search..."><div class="suggestions" id="distributorFilterSuggestions"></div></label>
-      <label>From Date <input type="date" id="fromDate"></label>
-      <label>To Date <input type="date" id="toDate"></label>
+      <label>State
+        <input type="text" id="stateInput" placeholder="Type to search..." autocomplete="off">
+        <div class="suggestions" id="stateSuggestions"></div>
+      </label>
+      <label>Rep
+        <input type="text" id="repInput" placeholder="Type to search..." autocomplete="off">
+        <div class="suggestions" id="repSuggestions"></div>
+      </label>
+      <label>City
+        <input type="text" id="cityInput" placeholder="Type to search..." autocomplete="off">
+        <div class="suggestions" id="citySuggestions"></div>
+      </label>
+      <label>Distributor
+        <input type="text" id="distributorInput" placeholder="Type to search..." autocomplete="off">
+        <div class="suggestions" id="distributorSuggestions"></div>
+      </label>
+      <label>From Date
+        <input type="date" id="fromDate">
+      </label>
+      <label>To Date
+        <input type="date" id="toDate">
+      </label>
     </div>
 
     <div id="totalSales">Total Sales: ₹0.00</div>
 
-    <table>
+    <table id="salesTable">
       <thead>
         <tr>
           <th>Bill No</th>
@@ -150,214 +53,156 @@
     </table>
 
     <div class="chart-container">
-      <canvas id="salesChart" height="100"></canvas>
+      <canvas id="salesChart"></canvas>
     </div>
   </div>
 
   <script>
-    const JSON_URL = 'https://script.google.com/macros/s/AKfycbzif5XIwwKr01ZEEz2Ut6plMXmRb4yV3VhzxhRRhcw_/dev';
-    
+    const sheetURL = "https://script.google.com/macros/s/AKfycbzyv3Y_0nups9x9RNo-EVtEJfyHiVeblf87ILJLRhC2cx2p3ewSqdE-RwlKpvsTXqQrUA/exec";
     let rawData = [];
-    let salesChart = null;
-    window.filterData = { states: [], reps: [], cities: [], distributors: [] };
 
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchData();
-      setupEventListeners();
-    });
-
-    function fetchData() {
-      fetch(CSV_URL)
-        .then(response => response.text())
-        .then(csv => {
-          const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-          rawData = parsed.data.map(row => ({
-            ...row,
-            "Bill Date": parseDate(row["Bill Date"]),
-            "Bill Amount": parseFloat(row["Bill Amount"].replace(/[^0-9.-]+/g, "")) || 0
-          }));
-          initAutocompleteFilters();
-          renderTable();
-          updateTotalSales();
-          updateChart();
-        })
-        .catch(err => console.error('Error fetching CSV:', err));
+    async function fetchData() {
+      try {
+        const response = await fetch(sheetURL);
+        const data = await response.json();
+        rawData = data;
+        updateFilters();
+        renderTable(rawData);
+        renderChart(rawData);
+        updateTotal(rawData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     }
 
-    function parseDate(dateStr) {
-      if (!dateStr || !dateStr.includes("-")) return null;
-      const [dd, mm, yyyy] = dateStr.split("-");
-      return new Date(`${yyyy}-${mm}-${dd}`);
-    }
-
-    function initAutocompleteFilters() {
-      const unique = (arr) => [...new Set(arr.filter(Boolean).map(i => i.trim()))];
-      window.filterData.states = unique(rawData.map(r => r.State));
-      window.filterData.reps = unique(rawData.map(r => r.Rep));
-      window.filterData.cities = unique(rawData.map(r => r.City));
-      window.filterData.distributors = unique(rawData.map(r => r.Distributor));
-    }
-
-    function getFilters() {
-      return {
-        state: document.getElementById("stateFilter").value.trim(),
-        rep: document.getElementById("repFilter").value.trim(),
-        city: document.getElementById("cityFilter").value.trim(),
-        distributor: document.getElementById("distributorFilter").value.trim(),
-        fromDate: document.getElementById("fromDate").value ? new Date(document.getElementById("fromDate").value) : null,
-        toDate: document.getElementById("toDate").value ? new Date(document.getElementById("toDate").value) : null
-      };
-    }
-
-    function applyFilters(data) {
-      const { state, rep, city, distributor, fromDate, toDate } = getFilters();
-      return data.filter(row => {
-        if (state && state.toLowerCase() !== "all" && row.State.toLowerCase() !== state.toLowerCase()) return false;
-        if (rep && rep.toLowerCase() !== "all" && row.Rep.toLowerCase() !== rep.toLowerCase()) return false;
-        if (city && city.toLowerCase() !== "all" && row.City.toLowerCase() !== city.toLowerCase()) return false;
-        if (distributor && distributor.toLowerCase() !== "all" && row.Distributor.toLowerCase() !== distributor.toLowerCase()) return false;
-        if (row["Bill Date"] instanceof Date && !isNaN(row["Bill Date"])) {
-          if (fromDate && row["Bill Date"] < fromDate) return false;
-          if (toDate && row["Bill Date"] > toDate) return false;
-        } else {
-          return false;
-        }
-        return true;
-      });
-    }
-
-    function renderTable() {
-      const filtered = applyFilters(rawData);
-      const tableBody = document.querySelector("table tbody");
-      tableBody.innerHTML = "";
-      filtered.forEach(row => {
+    function renderTable(data) {
+      const tbody = document.querySelector("#salesTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row["Bill No"]}</td>
-          <td>${formatDate(row["Bill Date"])}</td>
-          <td>₹${row["Bill Amount"].toFixed(2)}</td>
+          <td>${row["Bill Date"]}</td>
+          <td>₹${parseFloat(row["Bill Amount"] || 0).toFixed(2)}</td>
           <td>${row["Distributor"]}</td>
           <td>${row["City"]}</td>
           <td>${row["State"]}</td>
           <td>${row["Rep"]}</td>
         `;
-        tableBody.appendChild(tr);
+        tbody.appendChild(tr);
       });
-      updateChart();
     }
 
-    function updateTotalSales() {
-      const filtered = applyFilters(rawData);
-      const total = filtered.reduce((sum, row) => sum + (row["Bill Amount"] || 0), 0);
-      document.getElementById("totalSales").textContent = `Total Sales: ₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    function updateTotal(data) {
+      const total = data.reduce((sum, row) => sum + (parseFloat(row["Bill Amount"]) || 0), 0);
+      document.getElementById("totalSales").innerText = `Total Sales: ₹${total.toFixed(2)}`;
     }
 
-    function formatDate(dateObj) {
-      if (!(dateObj instanceof Date) || isNaN(dateObj)) return "Invalid Date";
-      const dd = String(dateObj.getDate()).padStart(2, "0");
-      const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const yyyy = dateObj.getFullYear();
-      return `${dd}-${mm}-${yyyy}`;
+    function filterData() {
+      const state = document.getElementById("stateInput").value.toLowerCase();
+      const rep = document.getElementById("repInput").value.toLowerCase();
+      const city = document.getElementById("cityInput").value.toLowerCase();
+      const distributor = document.getElementById("distributorInput").value.toLowerCase();
+      const fromDate = new Date(document.getElementById("fromDate").value);
+      const toDate = new Date(document.getElementById("toDate").value);
+
+      const filtered = rawData.filter(row => {
+        const rowDate = new Date(row["Bill Date"]);
+        return (
+          (!state || row["State"].toLowerCase().includes(state)) &&
+          (!rep || row["Rep"].toLowerCase().includes(rep)) &&
+          (!city || row["City"].toLowerCase().includes(city)) &&
+          (!distributor || row["Distributor"].toLowerCase().includes(distributor)) &&
+          (!isNaN(fromDate) ? rowDate >= fromDate : true) &&
+          (!isNaN(toDate) ? rowDate <= toDate : true)
+        );
+      });
+
+      renderTable(filtered);
+      renderChart(filtered);
+      updateTotal(filtered);
     }
 
-    function setupEventListeners() {
-      ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
-        const input = document.getElementById(id);
+    ["stateInput", "repInput", "cityInput", "distributorInput", "fromDate", "toDate"]
+      .forEach(id => document.getElementById(id).addEventListener("input", filterData));
+
+    function updateFilters() {
+      const fields = ["State", "Rep", "City", "Distributor"];
+      fields.forEach(field => {
+        const uniqueValues = [...new Set(rawData.map(row => row[field]))];
+        const input = document.getElementById(field.toLowerCase() + "Input");
+        const suggestionBox = document.getElementById(field.toLowerCase() + "Suggestions");
+        
         input.addEventListener("input", () => {
-          showSuggestions(id);
-          renderTable();
-          updateTotalSales();
+          const val = input.value.toLowerCase();
+          suggestionBox.innerHTML = "";
+          if (val) {
+            const matches = uniqueValues.filter(item => item.toLowerCase().includes(val));
+            matches.forEach(match => {
+              const div = document.createElement("div");
+              div.textContent = match;
+              div.addEventListener("click", () => {
+                input.value = match;
+                suggestionBox.style.display = "none";
+                filterData();
+              });
+              suggestionBox.appendChild(div);
+            });
+            suggestionBox.style.display = "block";
+          } else {
+            suggestionBox.style.display = "none";
+          }
         });
-        input.addEventListener("blur", () => {
-          setTimeout(() => hideSuggestions(id), 200);
-        });
-      });
 
-      ["fromDate", "toDate"].forEach(id => {
-        document.getElementById(id).addEventListener("change", () => {
-          renderTable();
-          updateTotalSales();
+        document.addEventListener("click", e => {
+          if (!input.contains(e.target) && !suggestionBox.contains(e.target)) {
+            suggestionBox.style.display = "none";
+          }
         });
       });
     }
 
-    function showSuggestions(filterId) {
-      const input = document.getElementById(filterId);
-      const suggestionsDiv = document.getElementById(filterId + "Suggestions");
-      const query = input.value.toLowerCase();
-      let list = [];
+    function renderChart(data) {
+      const ctx = document.getElementById("salesChart").getContext("2d");
+      const chartData = {};
 
-      switch (filterId) {
-        case "stateFilter": list = window.filterData.states; break;
-        case "repFilter": list = window.filterData.reps; break;
-        case "cityFilter": list = window.filterData.cities; break;
-        case "distributorFilter": list = window.filterData.distributors; break;
-      }
-
-      const filteredList = list.filter(item => item.toLowerCase().startsWith(query));
-      suggestionsDiv.innerHTML = "";
-
-      if (filteredList.length === 0) {
-        suggestionsDiv.style.display = "none";
-        return;
-      }
-
-      filteredList.forEach(item => {
-        const div = document.createElement("div");
-        div.textContent = item;
-        div.addEventListener("mousedown", () => {
-          input.value = item;
-          suggestionsDiv.style.display = "none";
-          renderTable();
-          updateTotalSales();
-        });
-        suggestionsDiv.appendChild(div);
+      data.forEach(row => {
+        const date = row["Bill Date"];
+        const amount = parseFloat(row["Bill Amount"]) || 0;
+        chartData[date] = (chartData[date] || 0) + amount;
       });
 
-      suggestionsDiv.style.display = "block";
-    }
+      const labels = Object.keys(chartData).sort();
+      const values = labels.map(label => chartData[label]);
 
-    function hideSuggestions(filterId) {
-      const suggestionsDiv = document.getElementById(filterId + "Suggestions");
-      suggestionsDiv.style.display = "none";
-    }
+      if (window.salesChart) window.salesChart.destroy();
 
-    function updateChart() {
-      const filtered = applyFilters(rawData);
-      const salesByCity = {};
-
-      filtered.forEach(row => {
-        const city = row.City || "Unknown";
-        salesByCity[city] = (salesByCity[city] || 0) + row["Bill Amount"];
-      });
-
-      const labels = Object.keys(salesByCity);
-      const values = Object.values(salesByCity);
-      const ctx = document.getElementById('salesChart').getContext('2d');
-      if (salesChart) salesChart.destroy();
-
-      salesChart = new Chart(ctx, {
-        type: 'bar',
+      window.salesChart = new Chart(ctx, {
+        type: 'line',
         data: {
           labels,
           datasets: [{
-            label: 'Sales by City',
+            label: 'Sales ₹',
             data: values,
-            backgroundColor: '#4285F4'
+            backgroundColor: 'rgba(46, 125, 50, 0.2)',
+            borderColor: '#2e7d32',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
           }]
         },
         options: {
           responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { mode: 'index', intersect: false }
-          },
           scales: {
-            y: { beginAtZero: true }
+            y: {
+              beginAtZero: true
+            }
           }
         }
       });
     }
+
+    fetchData();
   </script>
 </body>
 </html>
