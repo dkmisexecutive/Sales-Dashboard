@@ -1,46 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sales Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filters label {
+      position: relative;
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 60px;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .suggestions div {
+      padding: 6px 10px;
+    }
+
+    .suggestions div:hover {
+      background-color: #f0f0f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    #totalSales {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #2e7d32;
+      background-color: #e8f5e9;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .chart-container {
+      margin-top: 40px;
+      background: white;
+      padding: 20px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    @media (max-width: 768px) {
+      .filters {
+        flex-direction: column;
+      }
+
+      .filters label {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Sales Dashboard</h1>
-
     <div class="filters">
-      <label>
-        State
-        <input type="text" id="stateFilter" placeholder="Type to search...">
-        <div class="suggestions" id="stateFilterSuggestions"></div>
-      </label>
-      <label>
-        Rep
-        <input type="text" id="repFilter" placeholder="Type to search...">
-        <div class="suggestions" id="repFilterSuggestions"></div>
-      </label>
-      <label>
-        City
-        <input type="text" id="cityFilter" placeholder="Type to search...">
-        <div class="suggestions" id="cityFilterSuggestions"></div>
-      </label>
-      <label>
-        Distributor
-        <input type="text" id="distributorFilter" placeholder="Type to search...">
-        <div class="suggestions" id="distributorFilterSuggestions"></div>
-      </label>
-      <label>
-        From Date
-        <input type="date" id="fromDate">
-      </label>
-      <label>
-        To Date
-        <input type="date" id="toDate">
-      </label>
+      <label>State <input type="text" id="stateFilter" placeholder="Type to search..."><div class="suggestions" id="stateFilterSuggestions"></div></label>
+      <label>Rep <input type="text" id="repFilter" placeholder="Type to search..."><div class="suggestions" id="repFilterSuggestions"></div></label>
+      <label>City <input type="text" id="cityFilter" placeholder="Type to search..."><div class="suggestions" id="cityFilterSuggestions"></div></label>
+      <label>Distributor <input type="text" id="distributorFilter" placeholder="Type to search..."><div class="suggestions" id="distributorFilterSuggestions"></div></label>
+      <label>From Date <input type="date" id="fromDate"></label>
+      <label>To Date <input type="date" id="toDate"></label>
     </div>
 
     <div id="totalSales">Total Sales: ₹0.00</div>
@@ -57,9 +146,7 @@
           <th>Rep</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Rows will be inserted by JavaScript -->
-      </tbody>
+      <tbody></tbody>
     </table>
 
     <div class="chart-container">
@@ -67,6 +154,210 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    const CSV_URL = 'https://script.google.com/macros/s/AKfycbzif5XIwwKr01ZEEz2Ut6plMXmRb4yV3VhzxhRRhcw_/exec';
+
+    let rawData = [];
+    let salesChart = null;
+    window.filterData = { states: [], reps: [], cities: [], distributors: [] };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+      setupEventListeners();
+    });
+
+    function fetchData() {
+      fetch(CSV_URL)
+        .then(response => response.text())
+        .then(csv => {
+          const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+          rawData = parsed.data.map(row => ({
+            ...row,
+            "Bill Date": parseDate(row["Bill Date"]),
+            "Bill Amount": parseFloat(row["Bill Amount"].replace(/[^0-9.-]+/g, "")) || 0
+          }));
+          initAutocompleteFilters();
+          renderTable();
+          updateTotalSales();
+          updateChart();
+        })
+        .catch(err => console.error('Error fetching CSV:', err));
+    }
+
+    function parseDate(dateStr) {
+      if (!dateStr || !dateStr.includes("-")) return null;
+      const [dd, mm, yyyy] = dateStr.split("-");
+      return new Date(`${yyyy}-${mm}-${dd}`);
+    }
+
+    function initAutocompleteFilters() {
+      const unique = (arr) => [...new Set(arr.filter(Boolean).map(i => i.trim()))];
+      window.filterData.states = unique(rawData.map(r => r.State));
+      window.filterData.reps = unique(rawData.map(r => r.Rep));
+      window.filterData.cities = unique(rawData.map(r => r.City));
+      window.filterData.distributors = unique(rawData.map(r => r.Distributor));
+    }
+
+    function getFilters() {
+      return {
+        state: document.getElementById("stateFilter").value.trim(),
+        rep: document.getElementById("repFilter").value.trim(),
+        city: document.getElementById("cityFilter").value.trim(),
+        distributor: document.getElementById("distributorFilter").value.trim(),
+        fromDate: document.getElementById("fromDate").value ? new Date(document.getElementById("fromDate").value) : null,
+        toDate: document.getElementById("toDate").value ? new Date(document.getElementById("toDate").value) : null
+      };
+    }
+
+    function applyFilters(data) {
+      const { state, rep, city, distributor, fromDate, toDate } = getFilters();
+      return data.filter(row => {
+        if (state && state.toLowerCase() !== "all" && row.State.toLowerCase() !== state.toLowerCase()) return false;
+        if (rep && rep.toLowerCase() !== "all" && row.Rep.toLowerCase() !== rep.toLowerCase()) return false;
+        if (city && city.toLowerCase() !== "all" && row.City.toLowerCase() !== city.toLowerCase()) return false;
+        if (distributor && distributor.toLowerCase() !== "all" && row.Distributor.toLowerCase() !== distributor.toLowerCase()) return false;
+        if (row["Bill Date"] instanceof Date && !isNaN(row["Bill Date"])) {
+          if (fromDate && row["Bill Date"] < fromDate) return false;
+          if (toDate && row["Bill Date"] > toDate) return false;
+        } else {
+          return false;
+        }
+        return true;
+      });
+    }
+
+    function renderTable() {
+      const filtered = applyFilters(rawData);
+      const tableBody = document.querySelector("table tbody");
+      tableBody.innerHTML = "";
+      filtered.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row["Bill No"]}</td>
+          <td>${formatDate(row["Bill Date"])}</td>
+          <td>₹${row["Bill Amount"].toFixed(2)}</td>
+          <td>${row["Distributor"]}</td>
+          <td>${row["City"]}</td>
+          <td>${row["State"]}</td>
+          <td>${row["Rep"]}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+      updateChart();
+    }
+
+    function updateTotalSales() {
+      const filtered = applyFilters(rawData);
+      const total = filtered.reduce((sum, row) => sum + (row["Bill Amount"] || 0), 0);
+      document.getElementById("totalSales").textContent = `Total Sales: ₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    }
+
+    function formatDate(dateObj) {
+      if (!(dateObj instanceof Date) || isNaN(dateObj)) return "Invalid Date";
+      const dd = String(dateObj.getDate()).padStart(2, "0");
+      const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const yyyy = dateObj.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+
+    function setupEventListeners() {
+      ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
+        const input = document.getElementById(id);
+        input.addEventListener("input", () => {
+          showSuggestions(id);
+          renderTable();
+          updateTotalSales();
+        });
+        input.addEventListener("blur", () => {
+          setTimeout(() => hideSuggestions(id), 200);
+        });
+      });
+
+      ["fromDate", "toDate"].forEach(id => {
+        document.getElementById(id).addEventListener("change", () => {
+          renderTable();
+          updateTotalSales();
+        });
+      });
+    }
+
+    function showSuggestions(filterId) {
+      const input = document.getElementById(filterId);
+      const suggestionsDiv = document.getElementById(filterId + "Suggestions");
+      const query = input.value.toLowerCase();
+      let list = [];
+
+      switch (filterId) {
+        case "stateFilter": list = window.filterData.states; break;
+        case "repFilter": list = window.filterData.reps; break;
+        case "cityFilter": list = window.filterData.cities; break;
+        case "distributorFilter": list = window.filterData.distributors; break;
+      }
+
+      const filteredList = list.filter(item => item.toLowerCase().startsWith(query));
+      suggestionsDiv.innerHTML = "";
+
+      if (filteredList.length === 0) {
+        suggestionsDiv.style.display = "none";
+        return;
+      }
+
+      filteredList.forEach(item => {
+        const div = document.createElement("div");
+        div.textContent = item;
+        div.addEventListener("mousedown", () => {
+          input.value = item;
+          suggestionsDiv.style.display = "none";
+          renderTable();
+          updateTotalSales();
+        });
+        suggestionsDiv.appendChild(div);
+      });
+
+      suggestionsDiv.style.display = "block";
+    }
+
+    function hideSuggestions(filterId) {
+      const suggestionsDiv = document.getElementById(filterId + "Suggestions");
+      suggestionsDiv.style.display = "none";
+    }
+
+    function updateChart() {
+      const filtered = applyFilters(rawData);
+      const salesByCity = {};
+
+      filtered.forEach(row => {
+        const city = row.City || "Unknown";
+        salesByCity[city] = (salesByCity[city] || 0) + row["Bill Amount"];
+      });
+
+      const labels = Object.keys(salesByCity);
+      const values = Object.values(salesByCity);
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      if (salesChart) salesChart.destroy();
+
+      salesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Sales by City',
+            data: values,
+            backgroundColor: '#4285F4'
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+  </script>
 </body>
 </html>
