@@ -54,6 +54,9 @@
 
     <div class="chart-container">
       <canvas id="salesChart"></canvas>
+      <canvas id="statePieChart"></canvas>
+      <canvas id="cityPieChart"></canvas>
+      <canvas id="repPieChart"></canvas>
     </div>
   </div>
 
@@ -69,6 +72,9 @@
         updateFilters();
         renderTable(rawData);
         renderChart(rawData);
+        renderStatePieChart(rawData);
+        renderCityPieChart(rawData);
+        renderRepPieChart(rawData);
         updateTotal(rawData);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -120,6 +126,9 @@
 
       renderTable(filtered);
       renderChart(filtered);
+      renderStatePieChart(filtered);
+      renderCityPieChart(filtered);
+      renderRepPieChart(filtered);
       updateTotal(filtered);
     }
 
@@ -198,6 +207,90 @@
               beginAtZero: true
             }
           }
+        }
+      });
+    }
+
+    function renderStatePieChart(data) {
+      const ctx = document.getElementById("statePieChart").getContext("2d");
+      const stateData = {};
+
+      data.forEach(row => {
+        const state = row["State"];
+        const amount = parseFloat(row["Bill Amount"]) || 0;
+        stateData[state] = (stateData[state] || 0) + amount;
+      });
+
+      const labels = Object.keys(stateData);
+      const values = Object.values(stateData);
+
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'], // Add more colors as needed
+          }]
+        },
+        options: {
+          responsive: true,
+        }
+      });
+    }
+
+    function renderCityPieChart(data) {
+      const ctx = document.getElementById("cityPieChart").getContext("2d");
+      const cityData = {};
+
+      data.forEach(row => {
+        const city = row["City"];
+        const amount = parseFloat(row["Bill Amount"]) || 0;
+        cityData[city] = (cityData[city] || 0) + amount;
+      });
+
+      const labels = Object.keys(cityData);
+      const values = Object.values(cityData);
+
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'], // Add more colors as needed
+          }]
+        },
+        options: {
+          responsive: true,
+        }
+      });
+    }
+
+    function renderRepPieChart(data) {
+      const ctx = document.getElementById("repPieChart").getContext("2d");
+      const repData = {};
+
+      data.forEach(row => {
+        const rep = row["Rep"];
+        const amount = parseFloat(row["Bill Amount"]) || 0;
+        repData[rep] = (repData[rep] || 0) + amount;
+      });
+
+      const labels = Object.keys(repData);
+      const values = Object.values(repData);
+
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'], // Add more colors as needed
+          }]
+        },
+        options: {
+          responsive: true,
         }
       });
     }
