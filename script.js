@@ -1,4 +1,4 @@
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5XxdtzE8EspXl6l5EwqPg6kC0E36q6F9P7vKuT7RwSpa3981Mc6mt5xUOCRtXcLSrOWPX6oQb4geg/pub?gid=0&single=true&output=csv';
+const JSON_URL = 'https://script.google.com/macros/s/AKfycbzif5XIwwKr01ZEEz2Ut6plMXmRb4yV3VhzxhRRhcw_/dev';
 
 let rawData = [];
 let salesChart = null;
@@ -9,21 +9,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function fetchData() {
-  fetch(CSV_URL)
-    .then(response => response.text())
-    .then(csv => {
-      const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-      rawData = parsed.data.map(row => ({
+  fetch(JSON_URL)
+    .then(response => response.json())
+    .then(data => {
+      rawData = data.map(row => ({
         ...row,
         "Bill Date": parseDate(row["Bill Date"]),
         "Bill Amount": parseFloat(row["Bill Amount"].replace(/[^0-9.-]+/g, "")) || 0
       }));
+      extractUniqueFilters();
       initAutocompleteFilters();
       renderTable();
       updateTotalSales();
       updateChart();
     })
-    .catch(err => console.error('Error fetching CSV:', err));
+    .catch(err => console.error('Error fetching JSON:', err));
 }
 
 function parseDate(dateStr) {
@@ -99,13 +99,11 @@ function formatDate(dateObj) {
 function setupEventListeners() {
   ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
     const input = document.getElementById(id);
-
     input.addEventListener("input", () => {
       showSuggestions(id);
       renderTable();
       updateTotalSales();
     });
-
     input.addEventListener("blur", () => {
       setTimeout(() => hideSuggestions(id), 200);
     });
@@ -116,6 +114,25 @@ function setupEventListeners() {
       renderTable();
       updateTotalSales();
     });
+  });
+}
+
+function extractUniqueFilters() {
+  window.filterData = {
+    states: [...new Set(rawData.map(row => row.State).filter(Boolean))].sort(),
+    reps: [...new Set(rawData.map(row => row.Rep).filter(Boolean))].sort(),
+    cities: [...new Set(rawData.map(row => row.City).filter(Boolean))].sort(),
+    distributors: [...new Set(rawData.map(row => row.Distributor).filter(Boolean))].sort()
+  };
+}
+
+function initAutocompleteFilters() {
+  ["stateFilter", "repFilter", "cityFilter", "distributorFilter"].forEach(id => {
+    const input = document.getElementById(id);
+    const suggestionsDiv = document.createElement("div");
+    suggestionsDiv.className = "suggestions";
+    suggestionsDiv.id = id + "Suggestions";
+    input.parentNode.appendChild(suggestionsDiv);
   });
 }
 
@@ -133,7 +150,6 @@ function showSuggestions(filterId) {
   }
 
   const filteredList = list.filter(item => item.toLowerCase().startsWith(query));
-
   suggestionsDiv.innerHTML = "";
 
   if (filteredList.length === 0) {
