@@ -1,51 +1,49 @@
-<!-- Updated index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sales Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <div class="container">
     <h1>Sales Dashboard</h1>
 
-    <div id="totalSales">Total Sales: ₹0</div>
-
     <div class="filters">
       <label>
-        State:
-        <input type="text" id="stateFilter" placeholder="Type to search state..." autocomplete="off" />
+        State
+        <input type="text" id="stateFilter" placeholder="Type to search...">
         <div class="suggestions" id="stateFilterSuggestions"></div>
       </label>
       <label>
-        Representative:
-        <input type="text" id="repFilter" placeholder="Type to search rep..." autocomplete="off" />
+        Rep
+        <input type="text" id="repFilter" placeholder="Type to search...">
         <div class="suggestions" id="repFilterSuggestions"></div>
       </label>
       <label>
-        City:
-        <input type="text" id="cityFilter" placeholder="Type to search city..." autocomplete="off" />
+        City
+        <input type="text" id="cityFilter" placeholder="Type to search...">
         <div class="suggestions" id="cityFilterSuggestions"></div>
       </label>
       <label>
-        Distributor:
-        <input type="text" id="distributorFilter" placeholder="Type to search distributor..." autocomplete="off" />
+        Distributor
+        <input type="text" id="distributorFilter" placeholder="Type to search...">
         <div class="suggestions" id="distributorFilterSuggestions"></div>
       </label>
       <label>
-        Date From:
-        <input type="date" id="fromDate" />
+        From Date
+        <input type="date" id="fromDate">
       </label>
       <label>
-        To:
-        <input type="date" id="toDate" />
+        To Date
+        <input type="date" id="toDate">
       </label>
-      <button id="applyFiltersBtn">Apply Filters</button>
     </div>
+
+    <div id="totalSales">Total Sales: ₹0.00</div>
 
     <table>
       <thead>
@@ -59,21 +57,13 @@
           <th>Rep</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <!-- Rows will be inserted by JavaScript -->
+      </tbody>
     </table>
 
     <div class="chart-container">
       <canvas id="salesChart" height="100"></canvas>
-    </div>
-
-    <div class="chart-container">
-      <canvas id="repPieChart" height="100"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="statePieChart" height="100"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="cityPieChart" height="100"></canvas>
     </div>
   </div>
 
