@@ -1,4 +1,4 @@
-const JSON_URL = 'https://script.google.com/macros/s/AKfycbzif5XIwwKr01ZEEz2Ut6plMXmRb4yV3VhzxhRRhcw_/dev';
+const JSON_URL = 'https://script.google.com/macros/s/AKfycbzyv3Y_0nups9x9RNo-EVtEJfyHiVeblf87ILJLRhC2cx2p3ewSqdE-RwlKpvsTXqQrUA/exec';
 
 let rawData = [];
 let salesChart = null;
