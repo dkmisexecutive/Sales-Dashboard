@@ -2,6 +2,7 @@ const JSON_URL = 'https://script.google.com/macros/s/AKfycbzyv3Y_0nups9x9RNo-EVt
 
 let rawData = [];
 let salesChart = null;
+let statePie = null, cityPie = null, repPie = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
@@ -22,14 +23,22 @@ function fetchData() {
       renderTable();
       updateTotalSales();
       updateChart();
+      updatePieCharts();
     })
     .catch(err => console.error('Error fetching JSON:', err));
 }
 
 function parseDate(dateStr) {
-  if (!dateStr || !dateStr.includes("-")) return null;
-  const [dd, mm, yyyy] = dateStr.split("-");
-  return new Date(`${yyyy}-${mm}-${dd}`);
+  const date = new Date(dateStr);
+  return isNaN(date) ? null : date;
+}
+
+function formatDate(dateObj) {
+  if (!(dateObj instanceof Date) || isNaN(dateObj)) return "Invalid Date";
+  const dd = String(dateObj.getDate()).padStart(2, "0");
+  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const yyyy = dateObj.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 }
 
 function getFilters() {
@@ -68,7 +77,7 @@ function renderTable() {
   filtered.forEach(row => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${row["Bill No"]}</td>
+      <td>${row["Bill No"] || "-"}</td>
       <td>${formatDate(row["Bill Date"])}</td>
       <td>₹${row["Bill Amount"].toFixed(2)}</td>
       <td>${row["Distributor"]}</td>
@@ -80,20 +89,13 @@ function renderTable() {
   });
 
   updateChart();
+  updatePieCharts();
 }
 
 function updateTotalSales() {
   const filtered = applyFilters(rawData);
   const total = filtered.reduce((sum, row) => sum + (row["Bill Amount"] || 0), 0);
   document.getElementById("totalSales").textContent = `Total Sales: ₹${total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-}
-
-function formatDate(dateObj) {
-  if (!(dateObj instanceof Date) || isNaN(dateObj)) return "Invalid Date";
-  const dd = String(dateObj.getDate()).padStart(2, "0");
-  const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const yyyy = dateObj.getFullYear();
-  return `${dd}-${mm}-${yyyy}`;
 }
 
 function setupEventListeners() {
@@ -103,6 +105,7 @@ function setupEventListeners() {
       showSuggestions(id);
       renderTable();
       updateTotalSales();
+      updatePieCharts();
     });
     input.addEventListener("blur", () => {
       setTimeout(() => hideSuggestions(id), 200);
@@ -113,6 +116,7 @@ function setupEventListeners() {
     document.getElementById(id).addEventListener("change", () => {
       renderTable();
       updateTotalSales();
+      updatePieCharts();
     });
   });
 }
@@ -165,6 +169,7 @@ function showSuggestions(filterId) {
       suggestionsDiv.style.display = "none";
       renderTable();
       updateTotalSales();
+      updatePieCharts();
     });
     suggestionsDiv.appendChild(div);
   });
@@ -213,4 +218,49 @@ function updateChart() {
       }
     }
   });
+}
+
+function updatePieCharts() {
+  const filtered = applyFilters(rawData);
+
+  const groupData = (key) => {
+    return filtered.reduce((acc, row) => {
+      const label = row[key] || "Unknown";
+      acc[label] = (acc[label] || 0) + row["Bill Amount"];
+      return acc;
+    }, {});
+  };
+
+  const createPie = (ctxId, dataMap, oldChart) => {
+    const ctx = document.getElementById(ctxId).getContext("2d");
+    if (oldChart) oldChart.destroy();
+
+    return new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: Object.keys(dataMap),
+        datasets: [{
+          data: Object.values(dataMap),
+          backgroundColor: Object.keys(dataMap).map(() => '#' + Math.floor(Math.random()*16777215).toString(16))
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `₹${context.raw.toLocaleString("en-IN", {minimumFractionDigits: 2})}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  };
+
+  statePie = createPie("statePieChart", groupData("State"), statePie);
+  cityPie = createPie("cityPieChart", groupData("City"), cityPie);
+  repPie = createPie("repPieChart", groupData("Rep"), repPie);
 }
